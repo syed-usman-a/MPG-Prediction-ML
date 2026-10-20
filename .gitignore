@@ -1,7 +1,6 @@
-@"
+
 .venv/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .pytest_cache/
-"@ | Set-Content -Encoding ascii .gitignore
