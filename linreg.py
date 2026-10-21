@@ -41,7 +41,7 @@ if __name__ == "__main__":
     w = (9-21)/(4732-2648)
     b = 21 - w * 2648
 
-    print(f"Weight: {w}, Bias: {b}\n")
+    print(f"Slope: {w}, Intercept: {b}\n")
 
     y_pred = predict(x, w, b)
     y_pred_shape = np.shape(y_pred)
