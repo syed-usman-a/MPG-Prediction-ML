@@ -24,9 +24,15 @@ def mse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         y_true: 1-D array of true values.
         y_pred: 1-D array of predicted values.
 
+    Raises:
+        ValueError: If the shapes of y_true and y_pred do not match.
+        
     Returns:
         The mean squared error.
     """
+    if y_true.shape != y_pred.shape:
+        raise ValueError(f"Shape mismatch: {y_true.shape} vs {y_pred.shape}")
+    
     return np.mean((y_true - y_pred) ** 2)
 
 
