@@ -1,7 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from load_data import load_data, DATA_PATH
-
-
 
 def predict(x: np.ndarray, w: float, b: float) -> np.ndarray:
     """Predict the target values using a linear model.
@@ -57,3 +56,16 @@ if __name__ == "__main__":
     y_true = mpgs
     error = mse(y_true, y_pred)
     print(f"Mean Squared Error : {error}")
+
+    meanmpgs = np.mean(mpgs)
+    print(f"Mean MPG: {meanmpgs}")
+    y_mean = np.full_like(mpgs, meanmpgs)
+    error_mean = mse(y_true, y_mean)
+    print(f"Mean Squared Error (using mean): {error_mean}")
+
+    plt.scatter(x, y_true, color = "orange")
+    plt.xlabel("Weight (lb)")
+    plt.ylabel("Fuel economy (mpg)")
+    order = np.argsort(x)
+    plt.plot(x[order], y_pred[order], color = "red")
+    plt.show()
