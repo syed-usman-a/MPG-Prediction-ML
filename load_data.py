@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
 WEIGHT_COL = 4
+HP_COL = 3
 MPG_COL = 0
 DATA_PATH = Path(__file__).resolve().parent / "data" / "auto-mpg.data"
 
@@ -35,11 +36,27 @@ def load_data(path):
         
     return x, y
 
-    
+def load_multiple_feature_data(path) -> tuple[np.ndarray, np.ndarray]:
+    data = np.genfromtxt(path, usecols=(WEIGHT_COL, HP_COL, MPG_COL), missing_values="?", filling_values=np.nan)
+    valid_rows = np.isfinite(data).all(axis=1)
+
+    clean_data = data[valid_rows]
+    coefficients = clean_data[:, :2]
+    mpgs = clean_data[:, 2]
+
+    return coefficients, mpgs
+
+
 if __name__ == "__main__":
+
     print("**Loading Data**")
     print(f"Data Path: {DATA_PATH}\nExists: {DATA_PATH.exists()}\n")
     x, y = load_data(DATA_PATH)
     print(f"Data loaded successfully.")
     print (f"Minimum Weight: {x.min()}\nMaximum Weight: {x.max()}\nMinimum MPG: {y.min()}\nMaximum MPG: {y.max()}\n")
     print(f"Shape of x: {np.shape(x)}\nShape of y: {np.shape(y)}\n")
+    coefficients, mpgs = load_multiple_feature_data(DATA_PATH)
+
+
+    print(np.shape(coefficients), np.shape(mpgs))
+    
