@@ -21,6 +21,22 @@ def mse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     
     return np.mean((y_true - y_pred) ** 2)
 
+def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Return mean absolute error; raise ValueError for mismatched shapes."""
+    if y_true.shape != y_pred.shape:
+        raise ValueError(f"Shape mismatch: {y_true.shape} vs {y_pred.shape}")
+    
+    return np.mean(np.abs(y_true - y_pred))
+
+def r2(y_true, y_pred):
+    if y_true.shape != y_pred.shape:
+            raise ValueError(f"Shape mismatch: {y_true.shape} vs {y_pred.shape}")
+
+    total_variation = np.sum((y_true-np.mean(y_true))**2)
+    if total_variation == 0:
+        raise ValueError("Denominator must be non 0")
+
+    return 1 - np.sum((y_true-y_pred)**2)/total_variation
 
 def training(x: np.ndarray, y_true: np.ndarray, w: float, b: float, learning_rate: float, iterations: int) -> tuple[float, float, list[float]]:
     """Train on 1-D x and y_true; return slope, bias, and MSE history.
@@ -98,6 +114,15 @@ def plot_training_loss(mse_history: list[float]) -> None:
     plt.xlabel("Iterations")
     plt.ylabel("MSE (MPG^2)")
 
+def plot_residuals(y_true, y_pred):
+    residuals = y_true - y_pred
+    plt.figure()
+    plt.scatter(y_pred, residuals, color = "orange")
+    plt.xlabel("Predicted MPG")
+    plt.ylabel("Residual")
+    plt.axhline(0, color = "black", linestyle = "--")
+    
+
 
 def run_single_feature_example(weights: np.ndarray, mpgs: np.ndarray) -> None:
     """Compare the starting model, mean baseline, training, and closed form.
@@ -143,12 +168,12 @@ def run_multiple_feature_example(features : np.ndarray, mpgs : np.ndarray) -> No
 
     features_scaled = features / np.array([1000, 100])
 
-    weight = np.zeros(features_scaled.shape[1])
+    weights = np.zeros(features_scaled.shape[1])
     bias = np.mean(mpgs)
 
-    weight, bias, mse_history = training_multiple_features(features_scaled, mpgs, weight, bias, 0.01, 10000)
+    weights, bias, mse_history = training_multiple_features(features_scaled, mpgs, weights, bias, 0.01, 10000)
 
-    predictions = predict_multiple_features(features_scaled, weight, bias)
+    predictions = predict_multiple_features(features_scaled, weights, bias)
     ##print(f"Predictions: {predictions}")
     print(f"MSE: {mse_history[-1]}")
     plot_training_loss(mse_history)
@@ -164,6 +189,7 @@ def run_multiple_feature_example(features : np.ndarray, mpgs : np.ndarray) -> No
     predictions_closed = predict_multiple_features(features_scaled, w_closed, b_closed)
     print(mse(mpgs, predictions_closed))
 
+
 def split_data(x, y, test_fraction = 0.2, seed = 42):
     rng = np.random.default_rng(seed)
     indices = rng.permutation(len(y))
@@ -173,6 +199,43 @@ def split_data(x, y, test_fraction = 0.2, seed = 42):
     train_indices = indices[test_size: ]
     return x[train_indices], x[test_indices], y[train_indices], y[test_indices]
 
+def split_train_val_test(features, mpgs):
+
+    x_remaining, x_test, y_remaining, y_test = split_data(features, mpgs, test_fraction=0.2, seed=42)
+    x_train, x_val, y_train, y_val = split_data( x_remaining, y_remaining, test_fraction=0.25, seed=43)
+
+    return x_train, x_val, x_test, y_train, y_val, y_test
+
+def run_train_test_example(features, mpgs):
+    
+    x_train, x_val, x_test, y_train, y_val, y_test = split_train_val_test(features, mpgs)
+    x_train_scaled = x_train / np.array([1000, 100])
+    x_val_scaled = x_val / np.array([1000, 100])
+    x_test_scaled = x_test / np.array([1000, 100])
+    
+
+    weights = np.zeros(x_train_scaled.shape[1])
+    bias = np.mean(y_train)
+
+    weights, bias, mse_trained = training_multiple_features(x_train_scaled, y_train, weights, bias, 0.01, 10000)
+    train_predictions = predict_multiple_features(x_train_scaled, weights, bias)
+    val_preditions = predict_multiple_features(x_val_scaled, weights, bias)
+    test_predictions = predict_multiple_features(x_test_scaled, weights, bias)
+    train_baseline_predictions = np.full_like(y_test, np.mean(y_train))
+    val_baseline_predictions = np.full_like(y_test, np.mean(y_train))
+
+    print(f"Train MSE: {mse(y_train, train_predictions)}")
+    print(f"Test MSE: {mse(y_test, test_predictions)}")
+    print(f"Val MSE: {mse(y_val, val_preditions)}")
+    print(f"Test MAE: {mae(y_test, test_predictions)}")
+    print(f"Test RMSE: {np.sqrt(mse(y_test, test_predictions))}")
+    print(f"Test R2: {r2(y_test, test_predictions)}")
+    print(f"Test Baseline MSE: {mse(y_test, train_baseline_predictions)}")
+    print(f"Val Baseline MSE: {mse(y_val, val_baseline_predictions)}")
+
+    plot_residuals(y_test, test_predictions)
+    
+
 
 def main() -> None:
     """Load the dataset once and run the two learning examples."""
@@ -181,12 +244,11 @@ def main() -> None:
     
     run_single_feature_example(weights, mpgs_single)
     run_multiple_feature_example(features, mpgs)
+    run_train_test_example(features, mpgs)
 
-    x_train, x_test, y_train, y_test = split_data(features, mpgs)
-    print(np.shape(x_train), np.shape(x_test), np.shape(y_train), np.shape(y_test))
 
     # Uncomment to display the figures created by the single-feature example.
-    #plt.show()
+    plt.show()
 
 
 if __name__ == "__main__":
